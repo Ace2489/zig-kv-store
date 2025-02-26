@@ -61,11 +61,16 @@ pub const TimerHandler = struct {
             const now: u128 = timer.read() + @as(u128, @intCast(now_from_epoch));
             std.debug.print("\nTimer running at {}ns\n", .{now});
 
-            while (self.timerQueue.pop()) |request| {
+            for (self.timerQueue.items) |i| {
+                _ = i;
+                const request = self.timerQueue.orderedRemove(0); //An expensive workaround to not using a queue yet
                 try self.startTimer(request.requestId, request.duration, request.expiryAction);
             }
 
             self.perTickBookkeeping(now);
+            if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
+                break;
+            }
         }
     }
 };
