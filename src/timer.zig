@@ -64,7 +64,7 @@ pub const TimerHandler = struct {
             for (self.timerQueue.items) |i| {
                 _ = i;
                 const request = self.timerQueue.orderedRemove(0); //An expensive workaround to not using a queue yet
-                std.debug.print("Adding a new timer to the queue. Timer Details: Id:{s} CallbackReturnType:{} Duration/TickCount:{}\n", .{ request.requestId, request.expiryAction(), request.duration });
+                std.debug.print("Adding a new timer to the queue. Timer Details: Id:{s} Callback:{} Duration/TickCount:{}\n", .{ request.requestId, request.expiryAction, request.duration });
                 try self.startTimer(request.requestId, request.duration, request.expiryAction);
             }
 
