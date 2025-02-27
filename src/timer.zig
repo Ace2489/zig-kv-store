@@ -3,8 +3,8 @@ const Allocator = std.mem.Allocator;
 const StringHashmap = std.StringHashMap;
 
 pub const TimerHandler = struct {
-    const timerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn () void };
-    timerQueue: std.ArrayList(timerDetails), //todo: move this to a queue instead of an ArrayList
+    const timerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8) void };
+    timerQueue: std.ArrayList(timerDetails), //todo: move this to an actual queue instead of an ArrayList
     runningTimers: StringHashmap(timerDetails), //hashmap of timers currently running to allow O(1) insertion/removal
 
     pub fn init(allocator: Allocator) TimerHandler {
@@ -16,7 +16,7 @@ pub const TimerHandler = struct {
         self.timerQueue.deinit();
     }
 
-    fn startTimer(self: *TimerHandler, requestId: []const u8, duration: u64, expiryAction: *const fn () void) !void {
+    fn startTimer(self: *TimerHandler, requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8) void) !void {
         try self.runningTimers.put(requestId, .{ .requestId = requestId, .duration = duration, .expiryAction = expiryAction });
         errdefer std.debug.print("Failed to insert timer with id {s}", .{requestId});
     }
@@ -33,7 +33,6 @@ pub const TimerHandler = struct {
         while (iterator.next()) |timer| {
             std.debug.print("Modifying timer with key {s} \n", .{timer.key_ptr.*});
             timer.value_ptr.*.duration -= 1;
-
             if (timer.value_ptr.*.duration == 0) {
                 self.expiryProcessing(timer.key_ptr.*);
             }
@@ -41,11 +40,11 @@ pub const TimerHandler = struct {
     }
 
     fn expiryProcessing(self: *TimerHandler, requestId: []const u8) void {
-        const callback: *const fn () void = self.runningTimers.get(requestId).?.expiryAction;
+        const callback: *const fn ([]const u8) void = self.runningTimers.get(requestId).?.expiryAction;
         const removed = self.runningTimers.remove(requestId);
 
         std.debug.assert(removed == true);
-        callback();
+        callback(requestId);
     }
 
     pub fn run(self: *TimerHandler) !void {
@@ -69,13 +68,9 @@ pub const TimerHandler = struct {
             }
 
             self.perTickBookkeeping(now);
-            if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
-                break;
-            }
+            // if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
+            //     break;
+            // }
         }
     }
 };
-
-fn expiryCallback() void {
-    std.debug.print("Expiry callback called\n", .{});
-}
