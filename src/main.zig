@@ -3,6 +3,7 @@ const stdout = std.io.getStdOut().writer();
 const debugAlloc = std.heap.DebugAllocator;
 const Allocator = std.mem.Allocator;
 const Timer = @import("timer.zig").TimerHandler;
+const runTimers = @import("timer.zig").runTimerHandler;
 
 fn Test(timerId: []const u8) void {
     std.debug.print("Expiry action called for {s}\n", .{timerId});
@@ -14,7 +15,7 @@ pub fn main() !void {
 
     var timer = Timer.init(testAllocator);
     defer timer.deinit();
-    const thread = try std.Thread.spawn(.{}, run, .{&timer});
+    const thread = try std.Thread.spawn(.{}, runTimers, .{&timer});
     defer thread.join();
 
     try timer.timerQueue.append(.{ .requestId = "testReq", .duration = 1, .expiryAction = Test });
@@ -31,5 +32,3 @@ pub fn main() !void {
 fn run(timer: *Timer) !void {
     try timer.run();
 }
-
-fn pop()

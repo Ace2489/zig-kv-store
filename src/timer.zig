@@ -46,31 +46,31 @@ pub const TimerHandler = struct {
         std.debug.assert(removed == true);
         callback(requestId);
     }
+};
 
-    pub fn run(self: *TimerHandler) !void {
-        const interval = std.time.ns_per_s;
-        const now_from_epoch: i128 = std.time.nanoTimestamp();
+pub fn runTimerHandler(timerHandler: *TimerHandler) !void {
+    const interval = std.time.ns_per_s;
+    const now_from_epoch: i128 = std.time.nanoTimestamp();
 
-        std.debug.assert(now_from_epoch > 0); //Because why the heck would we be in the past lol
-        std.debug.print("Timer started at {}ns from the epoch\n", .{now_from_epoch});
+    std.debug.assert(now_from_epoch > 0); //Because why the heck would we be in the past lol
+    std.debug.print("Timer started at {}ns from the epoch\n", .{now_from_epoch});
 
-        var timer = std.time.Timer.start() catch @panic("Failed to start TimerHandler's timer\n");
-        while (true) {
-            std.Thread.sleep(interval);
-            const now: u128 = timer.read() + @as(u128, @intCast(now_from_epoch));
-            std.debug.print("\nTimer running at {}ns\n", .{now});
+    var timer = std.time.Timer.start() catch @panic("Failed to start TimerHandler's timer\n");
+    while (true) {
+        std.Thread.sleep(interval);
+        const now: u128 = timer.read() + @as(u128, @intCast(now_from_epoch));
+        std.debug.print("\nTimer running at {}ns\n", .{now});
 
-            for (self.timerQueue.items) |i| {
-                _ = i;
-                const request = self.timerQueue.orderedRemove(0); //An expensive workaround to not using a queue yet
-                std.debug.print("Adding a new timer to the queue. Timer Details: Id:{s} Callback:{} Duration/TickCount:{}\n", .{ request.requestId, request.expiryAction, request.duration });
-                try self.startTimer(request.requestId, request.duration, request.expiryAction);
-            }
+        for (timerHandler.timerQueue.items) |i| {
+            _ = i;
+            const request = timerHandler.timerQueue.orderedRemove(0); //An expensive workaround to not using a queue yet
+            std.debug.print("Adding a new timer to the queue. Timer Details: Id:{s} Callback:{} Duration/TickCount:{}\n", .{ request.requestId, request.expiryAction, request.duration });
+            try timerHandler.startTimer(request.requestId, request.duration, request.expiryAction);
+        }
 
-            self.perTickBookkeeping(now);
-            // if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
-            //     break;
-            // }
+        timerHandler.perTickBookkeeping(now);
+        if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
+            break;
         }
     }
-};
+}
