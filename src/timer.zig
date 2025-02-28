@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 const StringHashmap = std.StringHashMap;
 
 pub const TimerHandler = struct {
-    const timerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8) void };
+    const timerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, args: *anyopaque) void, expiryActionArgs: *anyopaque };
     timerQueue: std.ArrayList(timerDetails), //todo: move this to an actual queue instead of an ArrayList
     runningTimers: StringHashmap(timerDetails), //hashmap of timers currently running to allow O(1) insertion/removal
 
@@ -16,8 +16,8 @@ pub const TimerHandler = struct {
         self.timerQueue.deinit();
     }
 
-    fn startTimer(self: *TimerHandler, requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8) void) !void {
-        try self.runningTimers.put(requestId, .{ .requestId = requestId, .duration = duration, .expiryAction = expiryAction });
+    fn startTimer(self: *TimerHandler, requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, expiryActionArgs: *anyopaque) void, expiryActionArgs: *anyopaque) !void {
+        try self.runningTimers.put(requestId, .{ .requestId = requestId, .duration = duration, .expiryAction = expiryAction, .expiryActionArgs = expiryActionArgs });
         errdefer std.debug.print("Failed to insert timer with id {s}", .{requestId});
     }
 
@@ -40,11 +40,10 @@ pub const TimerHandler = struct {
     }
 
     fn expiryProcessing(self: *TimerHandler, requestId: []const u8) void {
-        const callback: *const fn ([]const u8) void = self.runningTimers.get(requestId).?.expiryAction;
-        const removed = self.runningTimers.remove(requestId);
+        const callback = self.runningTimers.get(requestId).?.expiryAction;
+        const removed = self.runningTimers.fetchRemove(requestId) orelse std.debug.panic("Tried to expire a non-existent timerId: {s}", .{requestId});
 
-        std.debug.assert(removed == true);
-        callback(requestId);
+        callback(requestId, removed.value.expiryActionArgs);
     }
 };
 
@@ -65,11 +64,11 @@ pub fn runTimerHandler(timerHandler: *TimerHandler) !void {
             _ = i;
             const request = timerHandler.timerQueue.orderedRemove(0); //An expensive workaround to not using a queue yet
             std.debug.print("Adding a new timer to the queue. Timer Details: Id:{s} Callback:{} Duration/TickCount:{}\n", .{ request.requestId, request.expiryAction, request.duration });
-            try timerHandler.startTimer(request.requestId, request.duration, request.expiryAction);
+            try timerHandler.startTimer(request.requestId, request.duration, request.expiryAction, request.expiryActionArgs);
         }
 
         timerHandler.perTickBookkeeping(now);
-        if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 5) { //Break if it's run for five seconds - here for debugging purposes
+        if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 10) { //Break if it's run for five seconds - here for debugging purposes
             break;
         }
     }
