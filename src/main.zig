@@ -6,9 +6,6 @@ const Timer = @import("timer.zig").TimerHandler;
 const runTimers = @import("timer.zig").runTimerHandler;
 const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHashMap([]const u8) };
 
-fn Test(timerId: []const u8) void {
-    std.debug.print("Expiry action called for {s}\n", .{timerId});
-}
 pub fn main() !void {
     var alloc = std.heap.DebugAllocator(.{}).init;
     const testAllocator: Allocator = alloc.allocator();
@@ -29,10 +26,6 @@ pub fn main() !void {
 
     try timer.timerQueue.append(.{ .requestId = "testReq2", .duration = 2, .expiryAction = ExpireItem, .expiryActionArgs = @ptrCast(&args) });
     thread.join();
-}
-
-fn run(timer: *Timer) !void {
-    try timer.run();
 }
 
 fn ExpireItem(timerId: []const u8, params: *anyopaque) void {
