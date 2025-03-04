@@ -24,8 +24,9 @@ pub fn main() !void {
 
     try store.put("key", "value");
 
+    const io = Io.init();
+
     while (true) {
-        const io = Io.init();
         const inputString: []const u8 = try getInput(testAllocator, io);
         defer testAllocator.free(inputString);
         break;
