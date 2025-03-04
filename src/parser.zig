@@ -20,7 +20,7 @@ pub fn extractOperation(inputString: []const u8) ParserError!Operation {
         return .quit;
     }
 
-    const threeLetterOperation = inputString[0..4]; //Include an extrac character for the space after 'get' or 'set'
+    const threeLetterOperation = inputString[0..5]; //Include an extrac character for the space after 'get' or 'set'
 
     if (eql(u8, threeLetterOperation, "get \"")) {
         return parse_getOperation(inputString);
