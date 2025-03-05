@@ -4,9 +4,11 @@ const debugAlloc = std.heap.DebugAllocator;
 const Allocator = std.mem.Allocator;
 const Timer = @import("timer.zig").TimerHandler;
 const timerRunner = @import("timer.zig").runTimerHandler;
-
-const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHashMap([]const u8) };
+const parserModule = @import("parser.zig");
 const Io = @import("io.zig").Io;
+
+const parser = parserModule.parseOperation;
+const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHashMap([]const u8) };
 
 pub fn main() !void {
     var alloc = std.heap.DebugAllocator(.{}).init;
@@ -25,14 +27,29 @@ pub fn main() !void {
     try store.put("key", "value");
 
     const io = Io.init();
-
     while (true) {
+        _ = try io.writer.write("here now\n");
+
         const inputString: []const u8 = try getInput(testAllocator, io);
         defer testAllocator.free(inputString);
-        break;
-        //     //get operations
-        //     //quit if a quit command is there
-        //     //perform operation
+
+        const operation: parserModule.Operation = parser(inputString) catch |err| {
+            try io.writer.print("Error: {}\n", .{err});
+            break;
+        };
+
+        switch (operation) {
+            .quit => break,
+            .get => |getOp| {
+                try io.writer.print("opps {} args {s}\n", .{ getOp, getOp.key });
+            },
+            .set => |setOp| {
+                try io.writer.print("opps {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
+            },
+            else => {
+                unreachable;
+            },
+        }
     }
 
     try timer.timerQueue.append(.{ .requestId = "testReq2", .duration = 2, .expiryAction = ExpireItem, .expiryActionArgs = @ptrCast(&args) });
