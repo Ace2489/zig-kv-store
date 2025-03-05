@@ -16,7 +16,7 @@ pub const InvalidSetArgumentError = error{};
 // identifer = "<string>" //any string enclosed in quotes
 // value = "<string>"//any string enclosed in quotes
 
-pub fn extractOperation(inputString: []const u8) ParserError!Operation {
+pub fn parseOperation(inputString: []const u8) ParserError!Operation {
     if (eql(u8, inputString, "quit")) {
         return .quit;
     }
@@ -77,7 +77,7 @@ fn parseSetOperation(inputString: []const u8) ParserError!Operation {
     }
     const value_end_index = getClosingQuotes(inputString, value_start_index + 1) orelse return ParserError.noCloseQuotesOnValue;
 
-    return .{ .set = .{ .key = inputString[key_start_index .. key_end_index + 1], .value = inputString[value_start_index .. value_end_index + 1] } };
+    return .{ .set = .{ .key = inputString[key_start_index..key_end_index], .value = inputString[value_start_index + 1 .. value_end_index] } };
 }
 
 fn getClosingQuotes(input: []const u8, start_index: usize) ?usize {
@@ -99,10 +99,10 @@ test getClosingQuotes {
     try expect(getClosingQuotes("closing \"", 5) == 8);
 }
 
-test extractOperation {
-    try expect(extractOperation("erroring out") == ParserError.invalidOperation);
-    try expect(extractOperation("error bla bla bla") == ParserError.invalidOperation);
-    try expect(try extractOperation("quit") == Operation.quit);
+test parseOperation {
+    try expect(parseOperation("erroring out") == ParserError.invalidOperation);
+    try expect(parseOperation("error bla bla bla") == ParserError.invalidOperation);
+    try expect(try parseOperation("quit") == Operation.quit);
 }
 
 test parseGetOperation {
@@ -114,15 +114,13 @@ test parseGetOperation {
 
 test parseSetOperation {
     try expect(try parseSetOperation("set \"key\" \"value\"") == .set);
+    const item = try parseOperation("set \"key\" \"value\"");
+    try expect(eql(u8, item.set.key, "key"));
+    try expect(eql(u8, item.set.value, "value"));
     try expect(parseSetOperation("set \"key") == ParserError.noCloseQuotesOnKey); //No closing quotes
     try expect(parseSetOperation("set \"key \"") == ParserError.insufficientValue); //Insufficient characters for a proper value
     try expect(parseSetOperation("set \"key\"value") == ParserError.noSpace); //No space after the key
     try expect(parseSetOperation("set \"key\" value") == ParserError.noOpeningQuotesOnValue); //No quotes to start off the value
     try expect(parseSetOperation("set \"key\" \"value") == ParserError.noCloseQuotesOnValue); //No quotes to end the value
 
-}
-
-pub fn main() !void {
-    const val = try extractOperation("set \"key\" \"value\"");
-    std.debug.print("output :{s}", .{val.set.value});
 }
