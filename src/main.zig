@@ -41,10 +41,10 @@ pub fn main() !void {
         switch (operation) {
             .quit => break,
             .get => |getOp| {
-                try io.writer.print("opps {} args {s}\n", .{ getOp, getOp.key });
+                try io.writer.print("operations {} args {s}\n", .{ getOp, getOp.key });
             },
             .set => |setOp| {
-                try io.writer.print("opps {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
+                try io.writer.print("operations {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
             },
             else => {
                 unreachable;
