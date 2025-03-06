@@ -52,11 +52,12 @@ pub fn main() !void {
         }
     }
 
-    try timer.timerQueue.append(.{ .requestId = "testReq2", .duration = 2, .expiryAction = ExpireItem, .expiryActionArgs = @ptrCast(&args) });
+    try timer.addToTimerQueue(.{ .requestId = "testReq2", .duration = 2, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(&args) });
     thread.join();
 }
 
-fn ExpireItem(timerId: []const u8, params: *anyopaque) void {
+// Called to 'expire' an item from the store - essentially, remove the item from the store after a duration of time
+fn expireItem(timerId: []const u8, params: *anyopaque) void {
     std.debug.print("Expiry action called for {s}\n", .{timerId});
     const args = @as(*StoreCallbackArgs, @alignCast(@ptrCast(params)));
     std.debug.print("Removing entry with key: {s} from the store\n", .{args.key});

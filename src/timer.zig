@@ -16,6 +16,12 @@ pub const TimerHandler = struct {
         self.timerQueue.deinit();
     }
 
+    //Adds a timer to the timerQueue - timers are popped from the queue and started on each tick
+    pub fn addToTimerQueue(self: *TimerHandler, timer: timerDetails) !void {
+        try self.timerQueue.append(timer);
+    }
+
+    //Starts a timer which expires after the specified duration
     fn startTimer(self: *TimerHandler, requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, expiryActionArgs: *anyopaque) void, expiryActionArgs: *anyopaque) !void {
         try self.runningTimers.put(requestId, .{ .requestId = requestId, .duration = duration, .expiryAction = expiryAction, .expiryActionArgs = expiryActionArgs });
         errdefer std.debug.print("Failed to insert timer with id {s}", .{requestId});
