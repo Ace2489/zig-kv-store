@@ -8,10 +8,10 @@ const parserModule = @import("parser.zig");
 const Io = @import("io.zig").Io;
 
 const parser = parserModule.parseOperation;
-const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHashMap([]const u8) };
+const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHashMap([]const u8), allocator: *const Allocator };
 
 pub fn main() !void {
-    var alloc = std.heap.DebugAllocator(.{}).init;
+    var alloc = std.heap.DebugAllocator(.{ .thread_safe = true }).init;
     const testAllocator: Allocator = alloc.allocator();
     defer std.debug.assert(alloc.deinit() == .ok);
 
@@ -22,48 +22,62 @@ pub fn main() !void {
     var store = std.StringHashMap([]const u8).init(testAllocator);
     defer store.deinit();
 
-    var args: StoreCallbackArgs = .{ .hashmap = &store, .key = "key" };
-
-    try store.put("key", "value");
-
     const io = Io.init();
     while (true) {
-        _ = try io.writer.write("here now\n");
-
         const inputString: []const u8 = try getInput(testAllocator, io);
         defer testAllocator.free(inputString);
 
         const operation: parserModule.Operation = parser(inputString) catch |err| {
             try io.writer.print("Error: {}\n", .{err});
-            break;
+            continue;
         };
 
         switch (operation) {
-            .quit => break,
+            .quit => {
+                thread.detach();
+                break;
+            },
             .get => |getOp| {
                 try io.writer.print("operations {} args {s}\n", .{ getOp, getOp.key });
+                try io.writer.print("{?s}\n", .{store.get(getOp.key)});
             },
             .set => |setOp| {
                 try io.writer.print("operations {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
+
+                const key = try testAllocator.dupe(u8, "key");
+                const value = try testAllocator.dupe(u8, setOp.value);
+
+                const inserted = try idempotentInsert(&store, key, value);
+                if (!inserted) continue;
+
+                const expiryTime = 10; //Each tick is one second.
+
+                const expiryActionArgs = try testAllocator.create(StoreCallbackArgs);
+                expiryActionArgs.* = .{ .hashmap = &store, .key = key, .allocator = &testAllocator };
+
+                try timer.addToTimerQueue(.{ .requestId = key, .duration = expiryTime, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(expiryActionArgs) });
             },
             else => {
                 unreachable;
             },
         }
     }
-
-    try timer.addToTimerQueue(.{ .requestId = "testReq2", .duration = 2, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(&args) });
-    thread.join();
 }
 
 // Called to 'expire' an item from the store - essentially, remove the item from the store after a duration of time
 fn expireItem(timerId: []const u8, params: *anyopaque) void {
     std.debug.print("Expiry action called for {s}\n", .{timerId});
     const args = @as(*StoreCallbackArgs, @alignCast(@ptrCast(params)));
-    std.debug.print("Removing entry with key: {s} from the store\n", .{args.key});
 
-    const removed = args.hashmap.*.remove(args.key);
-    std.debug.assert(removed == true);
+    std.debug.print("Removing entry with key: {s} from the store\n", .{args.key});
+    // std.Thread.Mutex()
+
+    const removed = args.hashmap.fetchRemove(args.key) orelse std.debug.panic("No store entry exists for the given key: {s}\n", .{args.key});
+
+    const allocator = args.allocator;
+    allocator.*.destroy(args);
+    allocator.*.free(removed.key); //Also removes the timerId, since they're both references to the same memory
+    allocator.*.free(removed.value);
 }
 
 fn getInput(allocator: Allocator, io: Io) ![]const u8 {
@@ -72,4 +86,23 @@ fn getInput(allocator: Allocator, io: Io) ![]const u8 {
     _ = try io.writer.write("> ");
     try io.reader.streamUntilDelimiter(inputStream.writer(), '\n', null);
     return inputStream.toOwnedSlice();
+}
+
+fn idempotentInsert(store: *std.StringHashMap([]const u8), key: []const u8, value: []const u8) !bool {
+    const result = try store.*.getOrPut(key);
+    if (result.found_existing == false) {
+        result.value_ptr.* = value;
+        return true;
+    }
+    return false;
+}
+
+const expect = std.testing.expect;
+test idempotentInsert {
+    const allocator = std.testing.allocator;
+    var store = std.StringHashMap([]const u8).init(allocator);
+    defer store.deinit();
+
+    try expect(try idempotentInsert(&store, "key", "value") == true); //First insert
+    try expect(try idempotentInsert(&store, "key", "value") == false); //Second insert should fail
 }

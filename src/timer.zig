@@ -2,13 +2,15 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const StringHashmap = std.StringHashMap;
 
+/// A timer handler which handles multiple timers by decrementing each timer in every tick.
+/// The tick interval is user-specified takes O(n) time to process all pending timers.
 pub const TimerHandler = struct {
-    const timerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, args: *anyopaque) void, expiryActionArgs: *anyopaque };
-    timerQueue: std.ArrayList(timerDetails), //todo: move this to an actual queue instead of an ArrayList
-    runningTimers: StringHashmap(timerDetails), //hashmap of timers currently running to allow O(1) insertion/removal
+    const TimerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, args: *anyopaque) void, expiryActionArgs: *anyopaque };
+    timerQueue: std.ArrayList(TimerDetails), //todo: move this to an actual queue instead of an ArrayList
+    runningTimers: StringHashmap(TimerDetails), //hashmap of timers currently running to allow O(1) insertion/removal
 
     pub fn init(allocator: Allocator) TimerHandler {
-        return .{ .runningTimers = StringHashmap(timerDetails).init(allocator), .timerQueue = std.ArrayList(timerDetails).init(allocator) };
+        return .{ .runningTimers = StringHashmap(TimerDetails).init(allocator), .timerQueue = std.ArrayList(TimerDetails).init(allocator) };
     }
 
     pub fn deinit(self: *TimerHandler) void {
@@ -17,7 +19,7 @@ pub const TimerHandler = struct {
     }
 
     //Adds a timer to the timerQueue - timers are popped from the queue and started on each tick
-    pub fn addToTimerQueue(self: *TimerHandler, timer: timerDetails) !void {
+    pub fn addToTimerQueue(self: *TimerHandler, timer: TimerDetails) !void {
         try self.timerQueue.append(timer);
     }
 
@@ -74,7 +76,7 @@ pub fn runTimerHandler(timerHandler: *TimerHandler) !void {
         }
 
         timerHandler.perTickBookkeeping(now);
-        if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 10) { //Break if it's run for five seconds - here for debugging purposes
+        if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 10) { //Break if it's run for ten seconds - here for debugging purposes
             break;
         }
     }
