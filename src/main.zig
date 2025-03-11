@@ -48,6 +48,7 @@ pub fn main() !void {
                 const value = try testAllocator.dupe(u8, setOp.value);
 
                 const inserted = try idempotentInsert(&store, key, value);
+                io.writer.print("{s} already exists in the store. Delete it and try again", .{key});
                 if (!inserted) continue;
 
                 const expiryTime = 10; //Each tick is one second.
@@ -57,8 +58,8 @@ pub fn main() !void {
 
                 try timer.addToTimerQueue(.{ .requestId = key, .duration = expiryTime, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(expiryActionArgs) });
             },
-            else => {
-                unreachable;
+            .delete => |deleteOp| {
+                try io.writer.print("Delete OP with key: {s}", .{deleteOp.key});
             },
         }
     }
