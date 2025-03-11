@@ -1,6 +1,6 @@
 # zig-kv-store
 
-An in-memory key-value store with TTL support built in Zig. This project was mainly a learning exercise to explore Zig's features for systems programming.
+An in-memory key-value store with TTL support built in Zig. This project is mainly a learning exercise to explore Zig's features for systems programming.
 
 ## Overview
 
