@@ -25,7 +25,6 @@ pub fn parseOperation(inputString: []const u8) ParserError!Operation {
     const del = "delete";
 
     if (eql(u8, inputString[0..del.len], del)) {
-        std.debug.print("\nDELETING\n", .{});
         return parseDeleteOperation(inputString);
     }
 

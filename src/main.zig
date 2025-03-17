@@ -44,12 +44,14 @@ pub fn main() !void {
             .set => |setOp| {
                 try io.writer.print("operations {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
 
-                const key = try testAllocator.dupe(u8, "key");
+                const key = try testAllocator.dupe(u8, setOp.key);
                 const value = try testAllocator.dupe(u8, setOp.value);
 
                 const inserted = try idempotentInsert(&store, key, value);
-                io.writer.print("{s} already exists in the store. Delete it and try again", .{key});
-                if (!inserted) continue;
+                if (!inserted) {
+                    try io.writer.print("{s} already exists in the store. Delete it and try again\n", .{key});
+                    continue;
+                }
 
                 const expiryTime = 10; //Each tick is one second.
 
@@ -59,7 +61,13 @@ pub fn main() !void {
                 try timer.addToTimerQueue(.{ .requestId = key, .duration = expiryTime, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(expiryActionArgs) });
             },
             .delete => |deleteOp| {
-                try io.writer.print("Delete OP with key: {s}", .{deleteOp.key});
+                try io.writer.print("Delete OP with key: {s}\n", .{deleteOp.key});
+                const removed = store.remove(deleteOp.key);
+                if (!removed) {
+                    try io.writer.print("There is no entry with a key of {s} in the store\n", .{deleteOp.key});
+                    continue;
+                }
+                timer.stopTimer(deleteOp.key);
             },
         }
     }

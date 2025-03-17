@@ -30,8 +30,9 @@ pub const TimerHandler = struct {
     }
 
     pub fn stopTimer(self: *TimerHandler, requestId: []const u8) void {
-        _ = requestId;
-        _ = self;
+        std.debug.print("Stop timer called with timerId {s}", .{requestId});
+        const removed = self.runningTimers.remove(requestId);
+        std.debug.assert(removed == true); //We should never call a stopTimer for a non-existent timer - that should have been handled by the caller function
     }
 
     fn perTickBookkeeping(self: *TimerHandler, now: u128) void {
@@ -77,7 +78,7 @@ pub fn runTimerHandler(timerHandler: *TimerHandler) !void {
 
         timerHandler.perTickBookkeeping(now);
         if (now - (@as(u128, @intCast(now_from_epoch))) >= std.time.ns_per_s * 10) { //Break if it's run for ten seconds - here for debugging purposes
-            break;
+            // break;
         }
     }
 }
