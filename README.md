@@ -1,6 +1,6 @@
 # zig-kv-store
 
-An in-memory key-value store with TTL support built in Zig. This project is mainly a learning exercise to explore Zig's features for systems programming.
+An in-memory key-value store with TTL support built in Zig.
 
 ## Overview
 
@@ -24,6 +24,21 @@ setOperation = "set" key value
 identifer = "<string>" //any string enclosed in quotes
 value = "<string>" //any string enclosed in quotes
 ```
+
+## Getting Started
+Clone the repo
+```
+git clone https://github.com/Ace2489/zig-kv-store
+```
+Navigate to the root directory of the project
+```
+cd zig-kv-store
+```
+Run the program (The logs are currently printed to stderr, so pipe those away to prevent distractions)
+```
+zig run src/main.zig 2> error.txt
+```
+
 
 ## Usage
 
