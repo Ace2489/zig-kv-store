@@ -19,8 +19,8 @@ The timer system runs on a separate thread and processes expiration events. The 
 
 Commands are parsed according to a simple grammar:
 ```
-getOperation = "get" identifer
-setOperation = "set" identifer value
+getOperation = "get" key
+setOperation = "set" key value
 identifer = "<string>" //any string enclosed in quotes
 value = "<string>" //any string enclosed in quotes
 ```
@@ -30,6 +30,7 @@ value = "<string>" //any string enclosed in quotes
 ```
 > set "key" "value"
 > get "key"
+> delete "key"
 > quit
 ```
 
