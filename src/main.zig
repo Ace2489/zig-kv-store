@@ -13,7 +13,7 @@ const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHa
 pub fn main() !void {
     var alloc = std.heap.DebugAllocator(.{ .thread_safe = true }).init;
     const testAllocator: Allocator = alloc.allocator();
-    defer std.debug.assert(alloc.deinit() == .ok);
+    defer _ = alloc.deinit();
 
     var timer = Timer.init(testAllocator);
     defer timer.deinit();

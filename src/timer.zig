@@ -32,6 +32,10 @@ pub const TimerHandler = struct {
     pub fn stopTimer(self: *TimerHandler, requestId: []const u8) void {
         std.debug.print("Stop timer called with timerId {s}", .{requestId});
         const removed = self.runningTimers.remove(requestId);
+        var iterator = self.runningTimers.iterator();
+        while (iterator.next()) |timer| {
+            std.debug.print("Timer ID{s}", .{timer.key_ptr.*});
+        }
         std.debug.assert(removed == true); //We should never call a stopTimer for a non-existent timer - that should have been handled by the caller function
     }
 
