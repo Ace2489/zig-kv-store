@@ -15,7 +15,7 @@ This is a simple KV store implementation with a command parser, in-memory storag
 
 ## Implementation Notes
 
-The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations.
+The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations. The default expiry timer for entries is set to five minutes.
 
 Commands are parsed according to a simple grammar:
 ```
@@ -34,7 +34,7 @@ Navigate to the root directory of the project
 ```
 cd zig-kv-store
 ```
-Run the program (The logs are currently printed to stderr,redirect them to prevent distractions)
+Run the program (The logs are currently printed to stderr, redirect them to prevent distractions)
 ```
 zig run src/main.zig 2> error.txt
 ```
