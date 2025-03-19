@@ -15,7 +15,7 @@ This is a simple KV store implementation with a command parser, in-memory storag
 
 ## Implementation Notes
 
-The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations. Both components use Zig's error handling approach extensively.
+The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations.
 
 Commands are parsed according to a simple grammar:
 ```
