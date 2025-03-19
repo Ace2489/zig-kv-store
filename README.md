@@ -34,7 +34,7 @@ Navigate to the root directory of the project
 ```
 cd zig-kv-store
 ```
-Run the program (The logs are currently printed to stderr, so pipe those away to prevent distractions)
+Run the program (The logs are currently printed to stderr,redirect them to prevent distractions)
 ```
 zig run src/main.zig 2> error.txt
 ```
