@@ -62,12 +62,18 @@ pub fn main() !void {
             },
             .delete => |deleteOp| {
                 try io.writer.print("Delete OP with key: {s}\n", .{deleteOp.key});
-                const removed = store.remove(deleteOp.key);
-                if (!removed) {
-                    try io.writer.print("There is no entry with a key of {s} in the store\n", .{deleteOp.key});
-                    continue;
-                }
-                timer.stopTimer(deleteOp.key);
+                const removed = store.fetchRemove(deleteOp.key) orelse
+                    {
+                        try io.writer.print("There is no entry with a key of {s} in the store\n", .{deleteOp.key});
+                        continue;
+                    };
+
+                const timerDetails = timer.stopTimer(deleteOp.key); //Make sure to stop the timer before freeing the keys, as they point to the same memory
+                testAllocator.free(removed.key);
+                testAllocator.free(removed.value);
+                const args = @as(*StoreCallbackArgs, @alignCast(@ptrCast(timerDetails)));
+
+                testAllocator.destroy(args);
             },
         }
     }

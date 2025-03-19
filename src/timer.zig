@@ -2,8 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const StringHashmap = std.StringHashMap;
 
-/// A timer handler which handles multiple timers by decrementing each timer in every tick.
-/// The tick interval is user-specified takes O(n) time to process all pending timers.
+/// A timer handler which handles multiple timers by decrementing each timer in each tick.
+/// The tick interval is user-specified. Takes O(n) time to process n pending timers in each tick.
 pub const TimerHandler = struct {
     const TimerDetails = struct { requestId: []const u8, duration: u64, expiryAction: *const fn ([]const u8, args: *anyopaque) void, expiryActionArgs: *anyopaque };
     timerQueue: std.ArrayList(TimerDetails), //todo: move this to an actual queue instead of an ArrayList
@@ -29,14 +29,10 @@ pub const TimerHandler = struct {
         errdefer std.debug.print("Failed to insert timer with id {s}", .{requestId});
     }
 
-    pub fn stopTimer(self: *TimerHandler, requestId: []const u8) void {
+    pub fn stopTimer(self: *TimerHandler, requestId: []const u8) *anyopaque {
         std.debug.print("Stop timer called with timerId {s}", .{requestId});
-        const removed = self.runningTimers.remove(requestId);
-        var iterator = self.runningTimers.iterator();
-        while (iterator.next()) |timer| {
-            std.debug.print("Timer ID{s}", .{timer.key_ptr.*});
-        }
-        std.debug.assert(removed == true); //We should never call a stopTimer for a non-existent timer - that should have been handled by the caller function
+        const removed = self.runningTimers.fetchRemove(requestId) orelse @panic("A stopTimer call was made for a non-existent timer"); //We should never call a stopTimer for a non-existent timer - that should have been handled by the caller function
+        return removed.value.expiryActionArgs; //Return the struct so we can destroy it from the caller
     }
 
     fn perTickBookkeeping(self: *TimerHandler, now: u128) void {
