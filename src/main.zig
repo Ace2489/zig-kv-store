@@ -13,7 +13,7 @@ const StoreCallbackArgs: type = struct { key: []const u8, hashmap: *std.StringHa
 pub fn main() !void {
     var alloc = std.heap.DebugAllocator(.{ .thread_safe = true }).init;
     const testAllocator: Allocator = alloc.allocator();
-    defer _ = alloc.deinit();
+    defer std.debug.assert(alloc.deinit() == .ok);
 
     var timer = Timer.init(testAllocator);
     defer timer.deinit();
@@ -38,12 +38,9 @@ pub fn main() !void {
                 break;
             },
             .get => |getOp| {
-                try io.writer.print("operations {} args {s}\n", .{ getOp, getOp.key });
                 try io.writer.print("{?s}\n", .{store.get(getOp.key)});
             },
             .set => |setOp| {
-                try io.writer.print("operations {} key {s} value {s}\n", .{ setOp, setOp.key, setOp.value });
-
                 const key = try testAllocator.dupe(u8, setOp.key);
                 const value = try testAllocator.dupe(u8, setOp.value);
 
@@ -53,15 +50,16 @@ pub fn main() !void {
                     continue;
                 }
 
-                const expiryTime = 10; //Each tick is one second.
+                const expiryTime = 60 * 5; //Each tick is one second. Set the entry to be removed after five minutes
 
                 const expiryActionArgs = try testAllocator.create(StoreCallbackArgs);
                 expiryActionArgs.* = .{ .hashmap = &store, .key = key, .allocator = &testAllocator };
 
                 try timer.addToTimerQueue(.{ .requestId = key, .duration = expiryTime, .expiryAction = expireItem, .expiryActionArgs = @ptrCast(expiryActionArgs) });
+                try io.writer.print("entry with key: {s} added to the store\n", .{key});
             },
             .delete => |deleteOp| {
-                try io.writer.print("Delete OP with key: {s}\n", .{deleteOp.key});
+                try io.writer.print("Deleting entry with key: {s} from the store\n", .{deleteOp.key});
                 const removed = store.fetchRemove(deleteOp.key) orelse
                     {
                         try io.writer.print("There is no entry with a key of {s} in the store\n", .{deleteOp.key});
