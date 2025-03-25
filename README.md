@@ -1,10 +1,10 @@
 # zig-kv-store
 
-An in-memory key-value store with TTL support built in Zig. This project is mainly a learning exercise to explore Zig's features for systems programming.
+An in-memory key-value store with TTL support built in Zig.
 
 ## Overview
 
-This is a simple KV store implementation with a command parser, in-memory storage using Zig's HashMaps, and a timer-based expiration system. The code demonstrates basic usage of Zig's memory management, error handling, and concurrency primitives.
+This is a simple KV store implementation with a command parser, in-memory storage, and a timer-based expiration system. The code demonstrates basic usage of Zig's memory management, error handling, and concurrency primitives.
 
 ## Components
 
@@ -15,7 +15,7 @@ This is a simple KV store implementation with a command parser, in-memory storag
 
 ## Implementation Notes
 
-The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations. Both components use Zig's error handling approach extensively.
+The timer system runs on a separate thread and processes expiration events. The command parser validates input syntax and converts string commands to structured operations. The default expiry timer for entries is set to five minutes.
 
 Commands are parsed according to a simple grammar:
 ```
@@ -24,6 +24,21 @@ setOperation = "set" key value
 identifer = "<string>" //any string enclosed in quotes
 value = "<string>" //any string enclosed in quotes
 ```
+
+## Getting Started
+Clone the repo
+```
+git clone https://github.com/Ace2489/zig-kv-store
+```
+Navigate to the root directory of the project
+```
+cd zig-kv-store
+```
+Run the program (The logs are currently printed to stderr, redirect them to prevent distractions)
+```
+zig run src/main.zig 2> error.txt
+```
+
 
 ## Usage
 
