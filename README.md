@@ -4,7 +4,7 @@ An in-memory key-value store with TTL support built in Zig.
 
 ## Overview
 
-This is a simple KV store implementation with a command parser, in-memory storage, and a timer-based expiration system. The code demonstrates basic usage of Zig's memory management, error handling, and concurrency primitives.
+A simple KV store implementation with a command parser, in-memory storage, and a timer-based expiration system. The code demonstrates usage of Zig's memory management, error handling, and concurrency primitives.
 
 ## Components
 
@@ -50,9 +50,6 @@ zig run src/main.zig 2> error.txt
 ```
 
 ## Limitations
-
-This is a learning project and has several limitations:
-- No persistence
 - Basic error handling
 
 ## Build
